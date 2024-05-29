@@ -1,7 +1,9 @@
-<script>
+<script lang="ts">
 	import '../app.css';
+	import { ModeWatcher } from 'mode-watcher';
 </script>
 
-<slot></slot>
-
-<style></style>
+<ModeWatcher />
+<div class="h-screen w-full">
+	<slot />
+</div>
