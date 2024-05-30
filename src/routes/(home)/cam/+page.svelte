@@ -19,6 +19,8 @@
 	const { data } = $props();
 
 	onMount(async () => {
+		await fetchCameras();
+
 		const Peer = (await import('peerjs')).default;
 
 		peer = new Peer(`${data.SECRET_KEY}-${generateId()}`);
@@ -29,13 +31,17 @@
 	});
 
 	const fetchCameras = async () => {
-		mediaStream = await navigator.mediaDevices.getUserMedia({
-			video: {
-				deviceId: selectedCamera?.deviceId,
-				width: { ideal: 1920 },
-				height: { ideal: 1080 }
-			}
-		});
+		try {
+			await navigator.mediaDevices.getUserMedia({
+				video: {
+					deviceId: selectedCamera?.deviceId,
+					width: { ideal: 1920 },
+					height: { ideal: 1080 }
+				}
+			});
+		} catch (error) {
+			alert(error);
+		}
 		const devices = await navigator.mediaDevices.enumerateDevices();
 		cameras = devices.filter((device) => device.kind === 'videoinput');
 		if (cameras.length > 0) {
@@ -79,19 +85,29 @@
 	};
 
 	const startWebCam = async (id: string) => {
+		console.log('XXX');
 		if (mediaStream) {
 			isConnected = true;
-			mediaConnection = peer?.call(id, mediaStream);
+			mediaConnection = peer?.call(`${data.SECRET_KEY}-${id}`, mediaStream);
+			mediaConnection?.on('error', (error) => {
+				console.log('Error', error);
+			});
+			mediaConnection?.on('stream', (stream) => {
+				console.log('Stream', stream);
+			});
 		}
 	};
 
 	$effect(() => {
-		inputId;
-		console.log('XXX', inputId.length);
+		console.log(inputId);
+		if (inputId.length === 6) {
+			$untrack();
+			console.log('XX');
+		}
 	});
 </script>
 
-{#if true}
+{#if !isConnected}
 	<div class="flex h-screen items-center justify-center">
 		<Card.Root class="mx-auto max-w-md">
 			<Card.Header>
@@ -115,14 +131,6 @@
 	<div
 		class="grid h-screen w-full grid-cols-1 grid-rows-3 items-center gap-x-0 gap-y-5 p-5 md:grid-cols-3 md:grid-rows-1 md:gap-x-5 md:gap-y-0"
 	>
-		<video
-			id="video"
-			autoplay
-			playsinline
-			class="col-span-2 row-span-2 h-full w-full rounded-xl bg-black"
-		>
-			<track kind="captions" />
-		</video>
 		<Card.Root class="h-full w-full">
 			<Card.Header>
 				<Card.Title class="text-2xl">ShadeHost - Cam</Card.Title>
