@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
 	import { afterUpdate } from 'svelte';
 	// @ts-ignore
 	import OtpItem from '$lib/components/ui/otp/OtpItem.svelte';
@@ -16,6 +16,8 @@
 	export let placeholder = '';
 	export let disabled = false;
 	export let onlyShowMiddleSeparator = false;
+	export let onSubmit: () => void = () => {};
+
 	let codes = [
 		...value.slice(0, numOfInputs).split(''),
 		...Array(numOfInputs <= value.length ? 0 : numOfInputs - value.length).fill('')
@@ -33,6 +35,10 @@
 			: placeholder.split('');
 	// @ts-ignore
 	$: value = codes.join('');
+	$: if (value.length === 6) {
+		onSubmit();
+		inputs[0].focus();
+	}
 </script>
 
 <div class={`${disableDefaultStyle ? '' : 'wrapper'} ${wrapperClass}`} style={wrapperStyle}>

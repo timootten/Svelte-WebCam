@@ -83,7 +83,6 @@
 	on:keypress={typeHandler}
 	on:input={changeHandler}
 	on:paste={pasteHandler}
-	type="number"
 	pattern="\d*"
 	{style}
 	{value}

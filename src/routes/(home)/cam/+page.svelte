@@ -1,6 +1,8 @@
 <script lang="ts">
+	import Button from '$lib/components/ui/button/button.svelte';
 	import * as Card from '$lib/components/ui/card/index';
 	import SvelteOtp from '$lib/components/ui/otp/SvelteOtp.svelte';
+	import * as Select from '$lib/components/ui/select';
 	import { generateId } from '$lib/utils.js';
 	import type { MediaConnection } from 'peerjs';
 	import type Peer from 'peerjs';
@@ -9,11 +11,10 @@
 	let inputId = $state('');
 	let peer = $state<Peer>();
 	let mediaConnection = $state<MediaConnection>();
-	const id = $derived(peer?.id.split('-')[1]);
 	let video = $state<HTMLVideoElement>();
 	let isConnected = $state(false);
 	let cameras = $state<MediaDeviceInfo[]>([]);
-	let selectedCamera = $state<MediaDeviceInfo>();
+	let selectedCamera = $state<{ value: string; label: string }>();
 	let mediaStream = $state<MediaStream>();
 
 	const { data } = $props();
@@ -34,7 +35,7 @@
 		try {
 			await navigator.mediaDevices.getUserMedia({
 				video: {
-					deviceId: selectedCamera?.deviceId,
+					deviceId: selectedCamera?.value,
 					width: { ideal: 1920 },
 					height: { ideal: 1080 }
 				}
@@ -45,22 +46,21 @@
 		const devices = await navigator.mediaDevices.enumerateDevices();
 		cameras = devices.filter((device) => device.kind === 'videoinput');
 		if (cameras.length > 0) {
-			let backCamera: MediaDeviceInfo | null = null;
+			let frontCamera: MediaDeviceInfo | null = null;
 			for (const device of cameras) {
-				if (
-					device.label.toLocaleLowerCase().includes('back') ||
-					device.label.toLocaleLowerCase().includes('rück')
-				) {
-					backCamera = device;
+				if (device.label.toLocaleLowerCase().includes('front')) {
+					frontCamera = device;
 					break;
 				}
 			}
-			selectedCamera = backCamera ? backCamera : cameras[0];
+			selectedCamera = frontCamera
+				? { value: frontCamera.deviceId, label: frontCamera.label }
+				: { value: cameras[0].deviceId, label: cameras[0].label };
 		}
 
 		mediaStream = await navigator.mediaDevices.getUserMedia({
 			video: {
-				deviceId: selectedCamera?.deviceId,
+				deviceId: selectedCamera?.value,
 				width: { ideal: 1920 },
 				height: { ideal: 1080 }
 			}
@@ -68,13 +68,11 @@
 		if (video) video.srcObject = mediaStream;
 	};
 
-	const handleCameraChange = async () => {
-		const selectedIndex = (document.getElementById('cameraSelector') as HTMLSelectElement)
-			.selectedIndex;
-		selectedCamera = cameras[selectedIndex];
+	const handleCameraChange = async (value: string) => {
+		//alert('XX' + value);
 
 		mediaStream = await navigator.mediaDevices.getUserMedia({
-			video: { deviceId: selectedCamera.deviceId, width: { ideal: 1920 }, height: { ideal: 1080 } }
+			video: { deviceId: value, width: { ideal: 1920 }, height: { ideal: 1080 } }
 		});
 		if (video) video.srcObject = mediaStream;
 		mediaConnection?.peerConnection.getSenders().forEach((sender) => {
@@ -86,8 +84,10 @@
 
 	const startWebCam = async (id: string) => {
 		console.log('XXX');
+		console.log(mediaStream);
 		if (mediaStream) {
 			isConnected = true;
+			console.log(`${data.SECRET_KEY}-${id}`, mediaStream);
 			mediaConnection = peer?.call(`${data.SECRET_KEY}-${id}`, mediaStream);
 			mediaConnection?.on('error', (error) => {
 				console.log('Error', error);
@@ -99,14 +99,14 @@
 	};
 
 	$effect(() => {
-		console.log(inputId);
-		if (inputId.length === 6) {
-			$untrack();
-			console.log('XX');
+		if (video && mediaStream) {
+			video.srcObject = mediaStream;
+			video.play();
 		}
 	});
 </script>
 
+<!-- svelte-ignore state_referenced_locally -->
 {#if !isConnected}
 	<div class="flex h-screen items-center justify-center">
 		<Card.Root class="mx-auto max-w-md">
@@ -121,8 +121,12 @@
 					separatorClass="font-bold"
 					onlyShowMiddleSeparator={true}
 					wrapperClass="w-full"
-					inputClass="rounded-xl text-xl"
+					inputClass="rounded-xl text-xl text-center"
 					inputStyle="width: 35px; height: 50px;"
+					onSubmit={() => {
+						startWebCam(inputId);
+						inputId = '';
+					}}
 				/>
 			</Card.Content>
 		</Card.Root>
@@ -131,13 +135,40 @@
 	<div
 		class="grid h-screen w-full grid-cols-1 grid-rows-3 items-center gap-x-0 gap-y-5 p-5 md:grid-cols-3 md:grid-rows-1 md:gap-x-5 md:gap-y-0"
 	>
+		<video
+			bind:this={video}
+			autoplay
+			playsinline
+			muted
+			class=" col-span-1 row-span-2 h-full w-full scale-x-[-1] bg-black md:col-span-2 md:row-span-1"
+		>
+			<track kind="captions" />
+		</video>
 		<Card.Root class="h-full w-full">
 			<Card.Header>
 				<Card.Title class="text-2xl">ShadeHost - Cam</Card.Title>
 				<Card.Description>Information:</Card.Description>
 			</Card.Header>
 			<Card.Content>
-				<p class="text-gray-600">SOON</p>
+				<div class="flex h-full w-full flex-col items-start gap-3">
+					<Select.Root
+						selected={selectedCamera}
+						onSelectedChange={(x) => {
+							if (x?.value) handleCameraChange(x?.value);
+						}}
+					>
+						<Select.Trigger class="w-full">
+							<Select.Value placeholder="Theme" />
+						</Select.Trigger>
+						<Select.Content>
+							{#each cameras as camera (camera.deviceId)}
+								<Select.Item value={camera.deviceId}
+									>{camera.label || `Camera ${camera.deviceId}`}</Select.Item
+								>
+							{/each}
+						</Select.Content>
+					</Select.Root>
+				</div>
 			</Card.Content>
 		</Card.Root>
 	</div>

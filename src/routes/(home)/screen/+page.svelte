@@ -2,11 +2,12 @@
 	import * as Card from '$lib/components/ui/card/index';
 	import SvelteOtp from '$lib/components/ui/otp/SvelteOtp.svelte';
 	import { generateId } from '$lib/utils.js';
-	import type { Peer } from 'peerjs';
+	import type { MediaConnection, Peer } from 'peerjs';
 	import { onMount } from 'svelte';
 
 	let peer = $state<Peer>();
 	const id = $derived(peer?.id.split('-')[1]);
+	let mediaConnection = $state<MediaConnection>();
 	let video = $state<HTMLVideoElement>();
 	let isConnected = $state(false);
 
@@ -24,13 +25,19 @@
 		peer.on('call', (call) => {
 			console.log('Check ID', call.connectionId);
 			call.answer();
-			call.on('stream', (stream) => {
-				if (!video) return;
-				video.srcObject = stream;
-				video.play();
-				isConnected = true;
-			});
+			isConnected = true;
+			mediaConnection = call;
 		});
+	});
+
+	$effect(() => {
+		if (video) {
+			mediaConnection?.on('stream', (stream) => {
+				console.log(stream);
+				video!.srcObject = stream;
+				video?.play();
+			});
+		}
 	});
 </script>
 
@@ -43,7 +50,7 @@
 			</Card.Header>
 			<Card.Content>
 				<SvelteOtp
-					value={id}
+					value={id || ''}
 					disabled={true}
 					separator="-"
 					separatorClass="font-bold"
@@ -61,7 +68,8 @@
 		bind:this={video}
 		autoplay
 		playsinline
-		class="absolute left-0 top-0 z-20 h-screen w-full bg-black"
+		muted
+		class="absolute left-0 top-0 z-20 h-screen w-full scale-x-[-1] bg-black"
 	>
 		<track kind="captions" />
 	</video>
