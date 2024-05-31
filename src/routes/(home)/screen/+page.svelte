@@ -4,6 +4,7 @@
 	import { generateId } from '$lib/utils.js';
 	import type { MediaConnection, Peer } from 'peerjs';
 	import { onMount } from 'svelte';
+	import { toast } from 'svelte-sonner';
 
 	let peer = $state<Peer>();
 	const id = $derived(peer?.id.split('-')[1]);
@@ -20,6 +21,7 @@
 
 		peer.on('open', function (id) {
 			console.log('My peer ID is: ' + id);
+			toast.success('Test');
 		});
 
 		peer.on('call', (call) => {
