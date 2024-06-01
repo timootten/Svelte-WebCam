@@ -37,7 +37,7 @@
 	$: value = codes.join('');
 	$: if (value.length === 6) {
 		onSubmit();
-		inputs[0].focus();
+		if (inputs[0]) inputs[0]?.focus();
 	}
 </script>
 

@@ -14,22 +14,32 @@
 
 	const { data } = $props();
 
-	onMount(async () => {
-		const Peer = (await import('peerjs')).default;
+	onMount(() => {
+		(async () => {
+			const Peer = (await import('peerjs')).default;
 
-		peer = new Peer(`${data.SECRET_KEY}-${generateId()}`);
+			peer = new Peer(`${data.SECRET_KEY}-${generateId()}`);
 
-		peer.on('open', function (id) {
-			console.log('My peer ID is: ' + id);
-			toast.success('Test');
-		});
+			peer.on('open', function (id) {
+				console.log('My peer ID is: ' + id);
+			});
 
-		peer.on('call', (call) => {
-			console.log('Check ID', call.connectionId);
-			call.answer();
-			isConnected = true;
-			mediaConnection = call;
-		});
+			peer.on('call', (call) => {
+				if (call.peer.split('-')[0] !== data.SECRET_KEY) return;
+				toast.success('Successfully connected to the camera.');
+				call.answer();
+				isConnected = true;
+				mediaConnection = call;
+				call.on('close', () => {
+					console.log('close');
+					isConnected = false;
+					toast.error('The camera session has been closed.');
+				});
+			});
+		})();
+		return () => {
+			peer?.destroy();
+		};
 	});
 
 	$effect(() => {

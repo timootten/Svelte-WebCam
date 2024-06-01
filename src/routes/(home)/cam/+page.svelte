@@ -7,6 +7,7 @@
 	import type { MediaConnection } from 'peerjs';
 	import type Peer from 'peerjs';
 	import { onMount } from 'svelte';
+	import { toast } from 'svelte-sonner';
 
 	let inputId = $state('');
 	let peer = $state<Peer>();
@@ -19,16 +20,21 @@
 
 	const { data } = $props();
 
-	onMount(async () => {
-		await fetchCameras();
+	onMount(() => {
+		(async () => {
+			await fetchCameras();
 
-		const Peer = (await import('peerjs')).default;
+			const Peer = (await import('peerjs')).default;
 
-		peer = new Peer(`${data.SECRET_KEY}-${generateId()}`);
+			peer = new Peer(`${data.SECRET_KEY}-${generateId()}`);
 
-		peer.on('open', function (id) {
-			console.log('My peer ID is: ' + id);
-		});
+			peer.on('open', function (id) {
+				console.log('My peer ID is: ' + id);
+			});
+		})();
+		return () => {
+			peer?.destroy();
+		};
 	});
 
 	const fetchCameras = async () => {
@@ -83,17 +89,19 @@
 	};
 
 	const startWebCam = async (id: string) => {
-		console.log('XXX');
-		console.log(mediaStream);
 		if (mediaStream) {
-			isConnected = true;
-			console.log(`${data.SECRET_KEY}-${id}`, mediaStream);
-			mediaConnection = peer?.call(`${data.SECRET_KEY}-${id}`, mediaStream);
-			mediaConnection?.on('error', (error) => {
-				console.log('Error', error);
+			peer?.on('error', (error) => {
+				toast.error('The screen device code is invalid');
+				isConnected = false;
 			});
-			mediaConnection?.on('stream', (stream) => {
-				console.log('Stream', stream);
+			mediaConnection = peer?.call(`${data.SECRET_KEY}-${id}`, mediaStream);
+			mediaConnection?.on('close', () => {
+				toast.error('The screen session has been closed.');
+				isConnected = false;
+			});
+			mediaConnection?.on('willCloseOnRemote', () => {
+				toast.success('Successfully connected to the screen.');
+				isConnected = true;
 			});
 		}
 	};
