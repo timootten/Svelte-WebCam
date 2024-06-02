@@ -1,7 +1,6 @@
 <script lang="ts">
 	export let input: HTMLInputElement | null = null;
 	export let index: number;
-	export let value: string;
 	export let codes: string[];
 	export let inputs: HTMLInputElement[];
 	export let nostyle: boolean;
@@ -19,8 +18,8 @@
 			['ArrowRight', 'ArrowLeft', 'Backspace'].includes(key2)
 		)
 			return;
-		if (value === ' ') {
-			value = '';
+		if (codes[index] === ' ') {
+			codes[index] = '';
 			return;
 		}
 		if (index !== inputs.length - 1) inputs[index + 1].focus();
@@ -31,22 +30,22 @@
 			e.preventDefault();
 		}
 		key = e.key;
-		if (value.length >= 1 && !e.ctrlKey) shiftFocus(key);
+		if (codes[index].length >= 1 && !e.ctrlKey) shiftFocus(key);
 	}
 
 	function typeHandler(e: KeyboardEvent) {
-		if (value.length >= 1 || (!num && !/[0-9]/.test(e.key))) {
+		if (codes[index].length >= 1 || (!num && !/[0-9]/.test(e.key))) {
 			e.preventDefault();
 		}
 	}
 
 	function changeHandler(e: Event) {
-		const val = (e.target as HTMLInputElement).value;
+		let val = (e.target as HTMLInputElement).value;
 		if (/[0-9]/.test(val) || !num || !val) {
 			codes = codes.map((c, i) => (i < index ? (c === '' ? ' ' : c) : i === index ? val[0] : c));
 			if (!val) {
-				const len = codes.length;
-				const filtered = codes.filter((_, i) => i !== index);
+				let len = codes.length;
+				let filtered = codes.filter((_, i) => i !== index);
 				codes = [...filtered, ...Array(len - filtered.length).fill('')];
 			}
 			shiftFocus(key);
@@ -63,10 +62,10 @@
 
 	function pasteHandler(e: ClipboardEvent) {
 		e.preventDefault();
-		const paste = e.clipboardData?.getData('text');
+		let paste = e.clipboardData?.getData('text');
 		if (!paste) return;
 		let pasteValue = paste.replace(num ? /[^0-9]/g : '', '').slice(0, codes.length - index);
-		const newCodes = [
+		let newCodes = [
 			...codes.slice(0, index),
 			...pasteValue.split(''),
 			...codes.slice(index + pasteValue.length)
@@ -85,7 +84,7 @@
 	on:paste={pasteHandler}
 	pattern="\d*"
 	{style}
-	{value}
+	value={codes[index]}
 	{placeholder}
 	{disabled}
 />

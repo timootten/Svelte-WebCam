@@ -31,6 +31,11 @@
 			peer.on('open', function (id) {
 				console.log('My peer ID is: ' + id);
 			});
+
+			peer?.on('error', (error) => {
+				toast.error('The screen device code is invalid');
+				isConnected = false;
+			});
 		})();
 		return () => {
 			peer?.destroy();
@@ -75,8 +80,6 @@
 	};
 
 	const handleCameraChange = async (value: string) => {
-		//alert('XX' + value);
-
 		mediaStream = await navigator.mediaDevices.getUserMedia({
 			video: { deviceId: value, width: { ideal: 1920 }, height: { ideal: 1080 } }
 		});
@@ -90,10 +93,6 @@
 
 	const startWebCam = async (id: string) => {
 		if (mediaStream) {
-			peer?.on('error', (error) => {
-				toast.error('The screen device code is invalid');
-				isConnected = false;
-			});
 			mediaConnection = peer?.call(`${data.SECRET_KEY}-${id}`, mediaStream);
 			mediaConnection?.on('close', () => {
 				toast.error('The screen session has been closed.');

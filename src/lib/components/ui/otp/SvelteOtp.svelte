@@ -42,11 +42,10 @@
 </script>
 
 <div class={`${disableDefaultStyle ? '' : 'wrapper'} ${wrapperClass}`} style={wrapperStyle}>
-	{#each codes as value, i (i)}
+	{#each codes as codeValue, i}
 		<OtpItem
 			num={numberOnly}
 			bind:input={inputs[i]}
-			bind:value
 			index={i}
 			bind:codes
 			{inputs}
