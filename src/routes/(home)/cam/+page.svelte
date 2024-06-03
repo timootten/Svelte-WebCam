@@ -69,19 +69,12 @@
 				: { value: cameras[0].deviceId, label: cameras[0].label };
 		}
 
-		mediaStream = await navigator.mediaDevices.getUserMedia({
-			video: {
-				deviceId: selectedCamera?.value,
-				width: { ideal: 1920 },
-				height: { ideal: 1080 }
-			}
-		});
-		if (video) video.srcObject = mediaStream;
+		if (selectedCamera) await handleCameraChange(selectedCamera?.value);
 	};
 
-	const handleCameraChange = async (value: string) => {
+	const handleCameraChange = async (deviceId: string) => {
 		mediaStream = await navigator.mediaDevices.getUserMedia({
-			video: { deviceId: value, width: { ideal: 1920 }, height: { ideal: 1080 } }
+			video: { deviceId: deviceId, width: { ideal: 1920 }, height: { ideal: 1080 } }
 		});
 		if (video) video.srcObject = mediaStream;
 		mediaConnection?.peerConnection.getSenders().forEach((sender) => {
@@ -102,6 +95,10 @@
 				toast.success('Successfully connected to the screen.');
 				isConnected = true;
 			});
+			// Timeout only for IOS devices, without it doesnt work
+			setTimeout(async () => {
+				if (selectedCamera) await handleCameraChange(selectedCamera?.value);
+			}, 200);
 		}
 	};
 
